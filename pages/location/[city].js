@@ -1,5 +1,7 @@
 import React from 'react'
 import cities from '../../lib/city.list.json'
+import Head from 'next/head';
+import TodaysWeather from '@/components/TodaysWeather';
 
 export async function getServerSideProps(context) {
     const city = getCity(context.params.city);
@@ -22,14 +24,14 @@ export async function getServerSideProps(context) {
         }
     }
 
-    console.log(data);
-
-    const slug = context.params.city;
-
+    const hourlyWeather = getHourlyWeather(data.hourly);
+    
     return{
         props:{
-        slug:slug,
-        data: data,
+        city : city,
+        currentWeather: data.current,
+        dailyWeather: data.daily,
+        hourlyWeather: hourlyWeather,
     },
 };
 }
@@ -49,14 +51,34 @@ const getCity = param => {
     } else {
         return null;
     }
+};
+
+const getHourlyWeather = (hourlyData) => {
+    const current = new Date();
+    current.setHours(current.getHours(), 0, 0, 0);
+    const tomorrow = new Date(current);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    const currentTimeStamp = Math.floor(current.getTime() / 1000);
+    const tomorrowTimeStamp = Math.floor(tomorrow.getTime() / 1000);
+
+    const todaysData = hourlyData.filter(data => data.dt < tomorrowTimeStamp);
+    return todaysData;
 }
 
-export default function City({slug, data}) {
-    console.log(data);
+export default function City({hourlyWeather, currentWeather, dailyWeather, city, }) {
   return (
     <div>
-        <h1>City Page</h1>
-        <h2>{slug}</h2>
+        <Head>
+            <title>{city.name} Weather-NextWeather App</title>
+        </Head>
+
+        <div className="page-wrapper">
+            <div className='container'>
+                <TodaysWeather city={city} weather={dailyWeather[0]} />
+            </div>
+        </div>
     </div>
   )
 }
